@@ -20,10 +20,12 @@ def main():
     t_data = np.array(t)
     Y_data = np.array(list(data_gen_exp_t.values()))
 
-    print("DONE")
+    print(Y_data)
+
 
 if __name__ == '__main__':
     main()
+
 
 def odefun(x, k):
     """Differential function of the ODE system.
