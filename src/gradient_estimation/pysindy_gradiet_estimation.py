@@ -1,0 +1,107 @@
+import numpy as np
+import pysindy as ps
+
+
+def pruned_model_optimizer_equality(prior_knowledge):
+    """
+    n_targets = number of variables that the system has
+    prior_knowledge = define the ODE elements that you are certain about
+        e.g. prior_knowledge = {
+                                    # "feature_names":  ['1',   'x0',   'x1',   'x0^2', 'x0 x1',    'x1^2'],
+                                    "x0":               [None,  None,   0,      0,      0,          0],
+                                    "x1":               [0,     None,   None,   0,      0,          0]
+                                }
+        None: unknown connection -> no constrains for the model
+        Number: This constant of the ODE needs to be this value
+
+    """
+    n_targets = len(prior_knowledge.keys())  # Every key is a target
+    n_features = len(list(prior_knowledge.values())[0])  # All features that could exist and could have a constant
+
+    # Set up the constraints for the optimizer
+    constraint_rhs = np.array([])
+    constraint_lhs = []
+    for i_target, measured_variable in enumerate(prior_knowledge):
+
+        constants_knowledge = prior_knowledge[measured_variable]
+        for i_feature, const_val in enumerate(constants_knowledge):
+
+            # None -> No knowledge about the connection. Don't add any constraints
+            if const_val is None or isinstance(const_val, str):
+                continue
+
+            # If we know something we need to append constraint_rhs with the value this constant should have
+            constraint_rhs = np.append(constraint_rhs, np.array([const_val]))
+
+            # The constraint_lhs needs to be the position of the model
+            constraint = np.zeros((n_targets, n_features))
+            constraint[i_target, i_feature] = 1
+            constraint = np.array(constraint.flatten())
+
+            constraint_lhs.append(constraint)
+
+    optimizer = ps.ConstrainedSR3(constraint_rhs=constraint_rhs, constraint_lhs=np.array(constraint_lhs))
+    return optimizer
+
+
+prior_knowledge = {
+    # "feature_names":  ['1',   'x0',   'x1',   'x0^2', 'x0 x1',    'x1^2'],
+    "x0": [None, None, 0, 0, 0, 0],
+    "x1": [0, None, None, 0, 0, 0]
+}
+
+
+def pruned_model_optimizer_inequality(prior_knowledge, eps: float = 1e-6):
+    """
+    n_targets = number of variables that the system has
+    prior_knowledge = define the ODE elements that you are certain about
+        e.g. prior_knowledge = {
+                                    # "feature_names":  ['1',   'x0',   'x1',   'x0^2', 'x0 x1',    'x1^2'],
+                                    "x0":               [None,  None,   0,      0,      0,          0],
+                                    "x1":               [0,     None,   None,   0,      0,          0]
+                                }
+        None: unknown connection -> no constrains for the model
+        Number: This constant of the ODE needs to be this value
+
+    """
+    n_targets = len(prior_knowledge.keys())  # Every key is a target
+    n_features = len(list(prior_knowledge.values())[0])  # All features that could exist and could have a constant
+
+    # Set up the constraints for the optimizer
+    constraint_rhs = np.array([])
+    constraint_lhs = []
+    for i_target, measured_variable in enumerate(prior_knowledge):
+
+        constants_knowledge = prior_knowledge[measured_variable]
+        for i_feature, const_val in enumerate(constants_knowledge):
+
+            # None -> No knowledge about the connection. Don't add any constraints
+            if const_val is None:
+                continue
+
+            if const_val == 0:
+                # Also add restriction from the bottom
+                constraint_rhs = np.append(constraint_rhs, np.array([eps]))
+                constraint = np.zeros((n_targets, n_features))
+                constraint[i_target, i_feature] = -1
+                constraint_lhs.append(np.array(constraint.flatten()))
+
+            # coefficient <= const_val + eps
+            constraint_rhs = np.append(constraint_rhs, np.array([const_val + eps]))  # Also add a small offset
+
+            # The constraint_lhs needs to be the position of the model
+            constraint = np.zeros((n_targets, n_features))
+            constraint[i_target, i_feature] = 1
+
+            constraint_lhs.append(np.array(constraint.flatten()))
+
+    optimizer = ps.ConstrainedSR3(
+            constraint_rhs=constraint_rhs,
+            constraint_lhs=np.array(constraint_lhs),
+            inequality_constraints=True,
+            thresholder="l1",
+            tol=1e-7,
+            threshold=10,
+            max_iter=10000
+    )
+    return optimizer

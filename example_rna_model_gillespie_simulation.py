@@ -4,6 +4,8 @@ from matplotlib import pyplot as plt
 from scipy.integrate import solve_ivp
 from scipy.interpolate import interp1d
 import pysindy as ps
+from pysindy.optimizers import STLSQ
+import cvxpy
 
 # Seed the random number generators for reproducibility
 np.random.seed(100)
@@ -99,36 +101,85 @@ def plot_model_prediction(model, x_test, dt, max_time):
     fig.show()
 
 
-if __name__ == "__main__":
-    dt = 0.1
-
-    M = np.array([[200, 100]]).T  # has shape (2, 1)
-    c = [10, 0.25, 0.3]
-    max_time = 30
-
-    rna_model = create_gillespie_rna_model(M, c, max_time)
-    results = np.array(rna_model.run(number_of_trajectories=10).to_array())
-
-    res_interpolated = []
-    for res in results:
-        res_interpolated.append(interpolate_to_fixed_timesteps(res, dt))
-
-    x_test = res_interpolated.pop(0)
-
-    model = ps.SINDy()
-    for x_data in res_interpolated:
-        model.fit(x_data, t=dt)
-    model.print()
-
-    print("Model score: %f" % model.score(x_test, t=dt))
-    plot_model_prediction(model, x_test, dt, max_time)
-
-    t_eval = np.linspace(0, max_time, 101)
+def get_true_rna_model(M, c, max_time, dt):
+    t_eval = np.linspace(0, max_time, 200)
     sol = solve_ivp(deterministic_rna, [0, max_time], [M[0][0], M[1][0]], t_eval=t_eval, args=c)
     T = sol.t
     X = sol.y.T
 
-    x_true = interpolate_to_fixed_timesteps(np.vstack((T, X[:, 0], X[:, 1])).T, dt)
+    return interpolate_to_fixed_timesteps(np.vstack((T, X[:, 0], X[:, 1])).T, dt)
 
-    print("Model score against true model: %f" % model.score(x_true, t=dt))
-    plot_model_prediction(model, x_true, dt, max_time)
+
+def model_with_equality_constrains(res_interpolated, dt, constraint_rhs, constraint_lhs):
+    # Define the optimizer
+    optimizer = ps.ConstrainedSR3(constraint_rhs=constraint_rhs, constraint_lhs=constraint_lhs)
+    model_equality_constrained = ps.SINDy(optimizer=optimizer, feature_library=library)
+
+    for x_data in res_interpolated:
+        model_equality_constrained.fit(x_data, t=dt)
+    print("Equality Constrained Model")
+    model_equality_constrained.print()
+
+
+if __name__ == "__main__":
+    dt = 0.1
+
+    M = np.array([[100, 0]]).T  # has shape (2, 1)
+    c = [10, 0.25, 0.5]
+    max_time = 30
+
+    print("Optimal Model")
+    print(f"(x0)' = {c[0]} 1 - {c[2]} x0")
+    print(f"(x1)' = {c[2]} x0 - {c[1]} x1")
+
+    # Create the simulation_data
+    results = np.array(create_gillespie_rna_model(M, c, max_time).run(number_of_trajectories=10).to_array())
+
+    # Interpolate the data to be in fixed time steps
+    res_interpolated = [interpolate_to_fixed_timesteps(res, dt) for res in results]
+
+    # Define the model with the custom optimizer
+    model_unconstrained = ps.SINDy()
+
+    for x_data in res_interpolated:
+        model_unconstrained.fit(x_data, t=dt)
+    print("Unconstrained Model:")
+    model_unconstrained.print()
+
+    # True underlying model for reference
+    x_true = get_true_rna_model(M, c, max_time, dt)
+
+    print("Model score against true model: %f" % model_unconstrained.score(x_true, t=dt))
+    plot_model_prediction(model_unconstrained, x_true, dt, max_time)
+
+    # Create Model again with constraints
+    library = ps.PolynomialLibrary()
+    library.fit([ps.AxesArray(x_data, {"ax_sample": 0, "ax_coord": 1})])
+    n_features = library.n_output_features_
+    print(f"Features ({n_features}):", library.get_feature_names())
+
+    # Set
+    n_targets = x_true.shape[1]
+    constraint_rhs = np.array([0, 28])
+
+    # One row per constraint, one column per coefficient
+    constraint_lhs = np.zeros((2, n_targets * n_features))
+
+    # 1 * (x0 coefficient) + 1 * (x1 coefficient) = 0
+    constraint_lhs[0, 1] = 1
+    constraint_lhs[0, 2] = 1
+
+    # 1 * (x0 coefficient) = 28
+    constraint_lhs[1, 1 + n_features] = 1
+
+    # Define the optimizer
+    optimizer = ps.ConstrainedSR3(constraint_rhs=constraint_rhs, constraint_lhs=constraint_lhs)
+    model_equality_constrained = ps.SINDy(optimizer=optimizer, feature_library=library)
+
+    for x_data in res_interpolated:
+        model_equality_constrained.fit(x_data, t=dt)
+    print("Equality Constrained Model")
+    model_equality_constrained.print()
+
+    print("Model score against true model: %f" % model_equality_constrained.score(x_true, t=dt))
+    plot_model_prediction(model_equality_constrained, x_true, dt, max_time)
