@@ -6,7 +6,7 @@ import numpy as np
 import pysindy as ps
 from src.commons.data_transformation import read_data
 from src.gradient_estimation.pysindy_gradiet_estimation import pruned_model_optimizer_inequality, \
-    pruned_model_optimizer_equality
+    pruned_model_optimizer_equality, translate_model_to_spare_array
 from src.visuals.plots import show_gene_expression_over_time_in_one_plot, plot_model_prediction, \
     plot_scores_over_threshold, format_model_for_graph_plot, create_graph_from_model, draw_graph
 
@@ -58,6 +58,14 @@ def main():
     plot_scores_over_threshold(threshold_scan, scores)
 
     # 3. Add prior biological knowledge about the system
+    rna_to_element_translation: dict = {
+        "SWI5": "x0",
+        "CBF1": "x1",
+        "GAL4": "x2",
+        "GAL80": "x3",
+        "ASH1": "x4"
+    }
+
     model_linear_no_further_constants_no_combinations = {
         "SWI5": ["SWI5", "GAL4"],
         "CBF1": ["SWI5", "ASH1"],
@@ -76,7 +84,7 @@ def main():
 
     model_linear_no_further_constants_combinations = {
         "SWI5": ["SWI5", "GAL4"],
-        "CBF1": ["SWI5", "ASH1", "SWI5 ASH1"],  # TODO: Watch for combinatorial switch
+        "CBF1": ["SWI5", "ASH1", "SWI5 ASH1"],
         "GAL4": ["CBF1", "GAL80"],
         "GAL80": ["1", "SWI5"],
         "ASH1": ["SWI5"]
@@ -123,8 +131,11 @@ def main():
         "ASH1": ["1", "SWI5", "SWI5^2"]
     }
 
+    translated_model = translate_model_to_spare_array(rna_to_element_translation, library.get_feature_names(),
+                                                      model_linear_constants_combinations)
+
     model_equality_constrained = ps.SINDy(
-            optimizer=pruned_model_optimizer_equality(model_linear_no_further_constants_no_combinations),
+            optimizer=pruned_model_optimizer_equality(translated_model),
             feature_library=library
     )
     model_equality_constrained.fit(x_data, t=dt)
@@ -137,7 +148,7 @@ def main():
     G = create_graph_from_model(format_model_for_graph_plot(model_equality_constrained, library))
 
     # Draw the graph with adapted edge thickness and color
-    draw_graph(G)
+    # draw_graph(G)
 
 
 if __name__ == '__main__':

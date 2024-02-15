@@ -1,3 +1,5 @@
+import re
+
 import numpy as np
 import pysindy as ps
 
@@ -105,3 +107,38 @@ def pruned_model_optimizer_inequality(prior_knowledge, eps: float = 1e-6):
             max_iter=10000
     )
     return optimizer
+
+
+def translate_string(input_string, translation_dict):
+    # Use a regular expression to replace each key with its corresponding value
+    for key, value in translation_dict.items():
+        input_string = re.sub(r'\b' + key + r'\b', value, input_string)
+    return input_string
+
+
+def translate_model_to_spare_array(rna_to_element_translation, feature_names, model_description):
+    translated_model = {f"x{i}": [] for i in range(len(model_description))}
+    element_to_rna_translation = {value: key for key, value in rna_to_element_translation.items()}
+
+    for rna_name, target_values in model_description.items():
+        target = rna_to_element_translation[rna_name]
+
+        target_features = []
+        for feature_name in feature_names:
+            translated_feature_name = translate_string(feature_name, element_to_rna_translation)
+
+            val = 0
+
+            if translated_feature_name in target_values:
+                val = None
+
+            # Check if the order needs to be switched
+            if " " in translated_feature_name and " ".join(
+                    list(reversed(translated_feature_name.split(" ")))) in target_values:
+                val = None
+
+            target_features.append(val)
+
+        translated_model[target] = target_features
+
+    return translated_model
