@@ -1,7 +1,8 @@
 # All matplotlib plots are stored here
-import matplotlib.pyplot as plt
-import numpy as np
 import networkx as nx
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
 
 GENE_COLORS = {"SWI5": "blue", "CBF1": "green", "GAL4": "red", "GAL80": "turquoise", "ASH1": "magenta"}
 
@@ -56,9 +57,29 @@ def plot_model_prediction(model, x_test, dt, max_time):
     fig.show()
 
 
+def find_first_negative_index(lst):
+    """
+    Returns the index of the first negative number in the list.
+    If there are no negative numbers, returns None.
+    """
+    for i, value in enumerate(lst):
+        if value < 0:
+            return i
+    return None
+
+
 def plot_scores_over_threshold(threshold_scan, scores):
     plt.plot(threshold_scan, scores, label="Score")
     plt.legend()
+    plt.xlabel("STLSQ Optimizer Threshold")
+    plt.ylabel("Score compared to model data")
+    plt.xlim((0, max(threshold_scan)))
+
+    # first_negative_value_index
+    fnvl = find_first_negative_index(scores)
+
+    plt.fill_between(threshold_scan[:fnvl], 0, scores[:fnvl], facecolor="blue", alpha=0.5)
+    plt.fill_between(threshold_scan[fnvl:], 0, scores[fnvl:], facecolor="red", alpha=0.5)
     plt.show()
 
 
@@ -137,3 +158,68 @@ def format_model_for_graph_plot(pysindy_model, library):
             model_equations[target].append((feature_names[j], round(coef[i, j], 3)))
 
     return model_equations
+
+
+def plot_corr_and_mi_matrices(correlation_matrix, mi_matrix):
+    # Create a mask for the upper triangle
+    mask = np.triu(np.ones_like(mi_matrix, dtype=bool))
+
+    # Set up the matplotlib figure
+    fig, axes = plt.subplots(1, 2, figsize=(20, 8))  # Adjust size as needed
+
+    # Plot the Correlation Matrix
+    sns.heatmap(correlation_matrix, mask=mask, annot=True, ax=axes[0], square=True)
+    axes[0].set_title('Correlation Matrix')
+
+    # Plot the Mutual Information Matrix
+    sns.heatmap(mi_matrix, mask=mask, annot=True, ax=axes[1], square=True)
+    axes[1].set_title('Mutual Information Matrix')
+
+    plt.show()
+
+
+def plot_relevance_graph(ax, threshold, matrix, title):
+    # Define positions for pentagram layout
+    positions = {
+        'CBF1': (1.0, 0.0),
+        'GAL4': (0.30901699437494745, 0.9510565162951535),
+        'GAL80': (-0.8090169943749473, 0.5877852522924732),
+        'SWI5': (-0.8090169943749476, -0.587785252292473),
+        'ASH1': (0.30901699437494723, -0.9510565162951536)
+    }
+
+    G = nx.Graph()
+
+    # Add nodes with the same labels as the correlation matrix columns
+    elements = matrix.columns
+    G.add_nodes_from(elements)
+
+    # Iterate over the elements to add edges based on the threshold
+    for i, element1 in enumerate(elements):
+        for j, element2 in enumerate(elements):
+            if i < j:  # Ensure that each pair is only considered once
+                correlation = matrix.iloc[i, j]
+                if abs(correlation) > threshold:  # Check if the correlation meets the threshold
+                    G.add_edge(element1, element2, weight=correlation)
+
+    # Draw nodes
+    nx.draw_networkx_nodes(G, positions, node_size=1400, ax=ax)
+
+    # Extract weights
+    weights = np.array([G[u][v]['weight'] for u, v in G.edges()])
+
+    # Draw edges
+    nx.draw_networkx_edges(G, positions, width=2, edge_color=weights, edge_cmap=plt.cm.coolwarm, ax=ax)
+
+    # Draw labels for nodes
+    nx.draw_networkx_labels(G, positions, font_size=12, ax=ax)
+
+    # Create edge labels for each edge, showing the weight
+    edge_labels = dict([((u, v,), f'{d["weight"]:.2f}') for u, v, d in G.edges(data=True)])
+
+    # Draw edge labels
+    nx.draw_networkx_edge_labels(G, positions, edge_labels=edge_labels, ax=ax)
+
+    # Set plot title
+    ax.set_title(title)
+    ax.axis('on')
