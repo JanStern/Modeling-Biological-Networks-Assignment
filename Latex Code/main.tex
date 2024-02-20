@@ -1,0 +1,119 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{hyperref}
+\usepackage{svg}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, shapes}
+
+\title{Identification  of  gene  regulatory  network  from  gene
+expression time-course data}
+\author{Jan Sternagel, Najwa Laabid}
+\date{February 2024}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+In this paper, we delve into the intriguing task of deducing gene regulatory networks (GRNs) from gene expression data, using a synthetic yeast network from Cantone et al. (2009) as our example. The challenge in inferring GRNs lies in the complex and nonlinear nature of gene regulation. Recognizing that no singular method can perfectly address all aspects of this complexity, we explore three distinct approaches, each escalating in complexity.
+
+We initiate our exploration with a straightforward relevance network method. This method aims to identify potential connections between genes and assess the strength of these connections. We utilize both correlation metrics and mutual information to construct this relevance network, implementing the ARACNE Algorithm to facilitate our analysis.
+
+Progressing further, we employ Gradient Matching coupled with regression models to sketch a preliminary design of the network. Here, the PySINDy library is instrumental, enabling us to apply a sparse regression model grounded in the LASSO technique\cite{de2020pysindy}. This technique selectively drives certain coefficient estimates to zero, effectively omitting them from the model. By adjusting thresholds and incorporating prior biological insights, we refine our model to more accurately reflect the genuine underlying network.
+
+In our final approach, we capitalize on the relatively small size of the dataset, which consists of only five variables. This manageable scale allows us to thoroughly search the graph space using a parameter grid and cross-validation.
+
+Notably, we exclude Bayesian network methods from our analysis. This decision stems from the requirement for Bayesian networks to form acyclic graphs, a constraint incompatible with the self-regulating characteristics inherent in our model. Through these methodologies, we aim to advance our understanding of gene regulatory networks, contributing valuable insights to the field of genetics.
+
+\section{Methods}
+
+IMPORTANT: We only have the switch off time series data!
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{image.png}
+    \caption{Enter Caption}
+    \label{fig:enter-label}
+\end{figure}
+
+Thus, we can only achieve this plot:
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{switch_off_time_series_true_plot.png}
+    \caption{Enter Caption}
+    \label{fig:enter-label}
+\end{figure}
+
+\subsection{}
+
+\section{Results}
+
+\begin{figure}[thb!]
+\includegraphics[width=15cm]{graphics/relevance_network.pdf}
+\centering
+\title{Correlation Matrix and Mutual Information Matrix}
+\label{corr_mi_matrix}
+\end{figure}
+
+
+\begin{figure}[thb!]
+\includegraphics[width=10cm]{graphics/score_with_varying_threshold.pdf}
+\centering
+\title{$R^2$ Score of ODE model compared to the actual data with varying threshold of the sparse regression model.}
+\label{score_by_threshold}
+\end{figure}
+
+With a score of 0.0 the model is over-fitted to match the given data identically. With the threshold being greater than $~0.09$ the $R^2$ score of the model becomes already negative. This suggests that the observed data is too little for 5 variables.
+The small hump around a threshold of 0.02 suggest a local optima around this range and should be considered more carefully. \\
+
+\hline
+Threshold = $0.01823$, $R^2$-Score = $0.426$  (All values are rounded)
+
+\begin{align*}
+\dot{SWI5} &= -0.076 x_{SWI5} + 0.033 x_{CBF1} - 0.035 x_{ASH1} \\
+\dot{CBF1} &= -0.038 x_{SWI5} - 0.041 x_{GAL4} + 0.023 x_{ASH1} \\
+\dot{GAL4} &= 0.000 \\
+\dot{GAL80} &= 0.000 \\
+\dot{ASH1} &= -0.127 x_{SWI5} + 0.065 x_{GAL4}
+\end{align*}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\linewidth]{graphics/optimal_threshold_graph.pdf}
+    \caption{Enter Caption}
+    \label{fig:enter-label}
+\end{figure}
+
+
+\hline
+Threshold = $0.06$, $R^2$-Score = $0.249$
+
+\begin{align*}
+\dot{SWI5} &= -0.094 x_{SWI5}\\
+\dot{CBF1} &= 0.000 \\
+\dot{GAL4} &= 0.000 \\
+\dot{GAL80} &= 0.000 \\
+\dot{ASH1} &= -0.100 x_{SWI5}
+\end{align*}
+
+
+\section{Discussion}
+
+
+
+\section{Conclusion}
+
+Too little data is available to base the identified models on with the methods presented in this assignment. The relevance network based on neither the correlation nor the mutual information is able to capture the relevant underlying dynamics.
+
+\newpage
+\bibliographystyle{plain}
+\bibliography{references.bib}
+
+\newpage
+\section{Appendix}
+
+The entire code can be accessed through the \href{https://github.com/JanStern/Modeling-Biological-Networks-Assignment}{GitHub Repository}.
+
+
+\end{document}
