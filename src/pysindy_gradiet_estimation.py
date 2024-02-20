@@ -45,13 +45,6 @@ def pruned_model_optimizer_equality(prior_knowledge):
     return optimizer
 
 
-prior_knowledge = {
-    # "feature_names":  ['1',   'x0',   'x1',   'x0^2', 'x0 x1',    'x1^2'],
-    "x0": [None, None, 0, 0, 0, 0],
-    "x1": [0, None, None, 0, 0, 0]
-}
-
-
 def pruned_model_optimizer_inequality(prior_knowledge, eps: float = 1e-6):
     """
     n_targets = number of variables that the system has
