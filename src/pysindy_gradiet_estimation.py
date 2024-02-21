@@ -134,3 +134,30 @@ def translate_model_to_spare_array(rna_to_element_translation, feature_names, mo
         translated_model[target] = target_features
 
     return translated_model
+
+
+def find_indexes_with_substring(arr, substring):
+    """
+    Find indexes of elements containing the specified substring in an array.
+
+    Parameters:
+    - arr: List[str]. The array to search through.
+    - substring: str. The substring to look for in the array's elements.
+
+    Returns:
+    - List[int]. A list of indexes of the elements that contain the substring.
+    """
+    indexes = [i for i, element in enumerate(arr) if substring in element]
+    return indexes
+
+def process_coefficient_matrix(coefficient_matrix, feature_biological_names, library_features):
+    coefficient_matrix_processed = {}
+    for i, element in enumerate(feature_biological_names):
+        values = []
+        for j, _ in enumerate(feature_biological_names):
+            indices = find_indexes_with_substring(library_features, f"x{j}")
+            values.append(sum(coefficient_matrix[i, indices]))
+
+        coefficient_matrix_processed[element] = values
+
+    return coefficient_matrix_processed

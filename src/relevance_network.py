@@ -16,7 +16,7 @@ def compute_mutual_info_matrix(df):
     return mi_matrix
 
 
-def apply_dpi(mi_matrix, threshold, dpi_threshold):
+def apply_aracne(mi_matrix, threshold, dpi_threshold):
     """
     Apply the Data Processing Inequality (DPI) to a mutual information matrix.
 
