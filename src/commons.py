@@ -74,10 +74,8 @@ def calculate_confusion_matrix_from_model(model_predicted: dict[str, list[float]
         connections_predicted = model_predicted[variable]
 
         for comp, pred in zip(connections_compare, connections_predicted):
-
-            if comp is None:
-                # We don't know what the model is doing when
-                continue
+            # We don't know what the model is doing when
+            if comp is None: continue
 
             elif comp == 0:
                 if pred == 0:

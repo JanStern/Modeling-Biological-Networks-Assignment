@@ -169,11 +169,11 @@ def plot_corr_and_mi_matrices(correlation_matrix, mi_matrix):
     fig, axes = plt.subplots(1, 2, figsize=(20, 8))  # Adjust size as needed
 
     # Plot the Correlation Matrix
-    sns.heatmap(correlation_matrix, mask=mask, annot=True, ax=axes[0], square=True)
+    sns.heatmap(correlation_matrix, mask=mask, annot=True, ax=axes[0], square=True, cmap=sns.color_palette("rocket_r", as_cmap=True))
     axes[0].set_title('Correlation Matrix')
 
     # Plot the Mutual Information Matrix
-    sns.heatmap(mi_matrix, mask=mask, annot=True, ax=axes[1], square=True)
+    sns.heatmap(mi_matrix, mask=mask, annot=True, ax=axes[1], square=True, cmap=sns.color_palette("rocket_r", as_cmap=True))
     axes[1].set_title('Mutual Information Matrix')
 
     plt.show()
