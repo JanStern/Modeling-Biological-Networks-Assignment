@@ -43,6 +43,8 @@ def show_gene_expression_over_time_in_one_plot(t: list, data_gen_exp_t: dict[str
 
 
 def plot_model_prediction(model, x_test, dt, max_time):
+    feature_biological_names = ["SWI5", "CBF1", "GAL4", "GAL80", "ASH1"]
+
     # Predict derivatives using the learned model
     x_dot_test_predicted = model.predict(x_test)
 
@@ -54,7 +56,9 @@ def plot_model_prediction(model, x_test, dt, max_time):
         axs[i].plot(np.arange(0, max_time + 1, dt), x_dot_test_computed[:, i], "k", label="numerical derivative")
         axs[i].plot(np.arange(0, max_time + 1, dt), x_dot_test_predicted[:, i], "r--", label="model prediction")
         axs[i].legend()
-        axs[i].set(xlabel="t", ylabel=r"$\dot x_{}$".format(i))
+        axs[i].set(xlabel="t", ylabel=r"$\dot x_{}$".format(feature_biological_names[i]))
+
+    plt.savefig("test.svg")
     fig.show()
 
 
@@ -81,6 +85,7 @@ def plot_scores_over_threshold(threshold_scan, scores):
 
     plt.fill_between(threshold_scan[:fnvl], 0, scores[:fnvl], facecolor="blue", alpha=0.5)
     plt.fill_between(threshold_scan[fnvl:], 0, scores[fnvl:], facecolor="red", alpha=0.5)
+    plt.savefig("test.svg")
     plt.show()
 
 
@@ -169,13 +174,16 @@ def plot_corr_and_mi_matrices(correlation_matrix, mi_matrix):
     fig, axes = plt.subplots(1, 2, figsize=(20, 8))  # Adjust size as needed
 
     # Plot the Correlation Matrix
-    sns.heatmap(correlation_matrix, mask=mask, annot=True, ax=axes[0], square=True, cmap=sns.color_palette("rocket_r", as_cmap=True))
+    sns.heatmap(correlation_matrix, mask=mask, annot=True, ax=axes[0], square=True,
+                cmap=sns.color_palette("rocket_r", as_cmap=True))
     axes[0].set_title('Correlation Matrix')
 
     # Plot the Mutual Information Matrix
-    sns.heatmap(mi_matrix, mask=mask, annot=True, ax=axes[1], square=True, cmap=sns.color_palette("rocket_r", as_cmap=True))
+    sns.heatmap(mi_matrix, mask=mask, annot=True, ax=axes[1], square=True,
+                cmap=sns.color_palette("rocket_r", as_cmap=True))
     axes[1].set_title('Mutual Information Matrix')
 
+    plt.savefig("test.svg")
     plt.show()
 
 
@@ -241,4 +249,19 @@ def plot_roc(fprs, tprs, title):
     plt.ylabel('True Positive Rate')
     plt.title(title)
     plt.legend(loc="lower right")
+    plt.savefig("test.svg")
+    plt.show()
+
+
+def plot_roc_simplified(fprs, tprs):
+    plt.figure()
+
+    plt.plot([0, 1], [0, 1], color='navy', lw=5, linestyle='--')
+    plt.plot(fprs, tprs, color='black', lw=30)
+
+    plt.xlim([-0.05, 1.05])
+    plt.ylim([0.0, 1.05])
+
+    plt.axis('off')
+    plt.savefig("roc_simple_NAME.svg")
     plt.show()
