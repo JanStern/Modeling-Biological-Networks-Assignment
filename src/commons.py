@@ -21,7 +21,8 @@ def read_data(file_path: str) -> tuple[list, dict[str, list]]:
 def calculate_confusion_matrix_from_model(model_predicted: dict[str, list[float]],
                                           compare_aginst_switch_off_sereies: bool = True,
                                           consider_inhibition: bool = True,
-                                          undirected_model: bool = False):
+                                          undirected_model: bool = False,
+                                          return_fps_tps: bool = False) -> Tuple[float, float, int, int]:
     """
 
     """
@@ -108,6 +109,9 @@ def calculate_confusion_matrix_from_model(model_predicted: dict[str, list[float]
         tpr: float = true_positives / (true_positives + false_negatives)
     except ZeroDivisionError:
         tpr = 0.0
+        
+    if return_fps_tps: return fpr, tpr, false_positives, true_positives
+    
     return fpr, tpr
 
 

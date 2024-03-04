@@ -183,7 +183,8 @@ def plot_corr_and_mi_matrices(correlation_matrix, mi_matrix):
                 cmap=sns.color_palette("rocket_r", as_cmap=True))
     axes[1].set_title('Mutual Information Matrix')
 
-    plt.savefig("test.svg")
+    plt.tight_layout();
+    plt.savefig("figures/corr.png")
     plt.show()
 
 
@@ -233,25 +234,19 @@ def plot_relevance_graph(ax, threshold, matrix, title):
     ax.set_title(title)
     ax.axis('on')
 
-
-def plot_roc(fprs, tprs, title):
-    # Plotting the ROC curve
-    plt.figure()
-    try:
-        plt.plot(fprs, tprs, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % auc(fprs, tprs))
-    except:
-        plt.plot(fprs, tprs, color='darkorange', lw=2, label='ROC curve')
-
-    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-    plt.xlim([-0.05, 1.05])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title(title)
-    plt.legend(loc="lower right")
-    plt.savefig("test.svg")
-    plt.show()
-
+def plot_roc(fpr, tpr, roc_auc, save_path=None):
+    plt.figure();
+    lw = 2
+    plt.plot(fpr, tpr, color='darkorange', lw=lw, label='ROC curve (area = %0.4f)' % roc_auc);
+    # add the random line
+    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--');
+    plt.xlim([0.0, 1.0]);
+    plt.ylim([0.0, 1.05]);
+    plt.xlabel('False Positive Rate');
+    plt.ylabel('True Positive Rate');
+    plt.legend(loc="lower right");
+    if save_path: plt.savefig(save_path);
+    plt.show();
 
 def plot_roc_simplified(fprs, tprs):
     plt.figure()
